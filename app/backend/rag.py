@@ -1,10 +1,9 @@
-from backend.retrieval import find_similar_neighbors
-from backend.utils import detect_language
-from backend.config import config
+from .retrieval import find_similar_neighbors
+from .utils import detect_language
+from .config import config
 import requests
 import numpy as np
 from typing import List
-import streamlit as st
 
 
 def get_llm_answer(query: str, query_language: str, texts_for_rag: List[str]) -> str:
@@ -16,8 +15,8 @@ def get_llm_answer(query: str, query_language: str, texts_for_rag: List[str]) ->
     :param texts_for_rag: Context texts retrieved for RAG.
     :return: Generated answer.
     """
-    MODEL_NAME = st.secrets.llm["MODEL_NAME"]
-    IAM_TOKEN = st.secrets.llm["IAM_TOKEN"]
+    MODEL_NAME = config.LLM_MODEL_NAME
+    IAM_TOKEN = config.LLM_IAM_TOKEN
 
     if query_language == 'ru':
         prompt = f'''Тебе даны вопрос {query} и тексты {texts_for_rag}. 
@@ -77,8 +76,8 @@ def get_answer(query: str, use_gpt: bool = True, topk_for_rag: int = 3):
     info = []
     texts_for_rag = []
     for row in rows_for_rag:
-        d = {'filename': row.filename, 'info': row.n_slide if not np.isnan(row.n_slide) else row.text}
+        d = {'filename': row['filename'], 'info': row['n_slide'] if not np.isnan(row['n_slide']) and row['n_slide'] > -1 else row['text']}
         info.append(d)
-        texts_for_rag.append(row.text)
+        texts_for_rag.append(row['text'])
     answer = get_llm_answer(query, detect_language(query), texts_for_rag) if use_gpt else None
     return info, answer
